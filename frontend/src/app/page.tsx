@@ -23,7 +23,9 @@ import {
   CheckCircleIcon, 
   XCircleIcon, 
   ClockIcon, 
-  ArrowPathIcon 
+  ArrowPathIcon,
+  CalendarIcon,
+  PlusIcon
 } from "@heroicons/react/24/outline";
 
 // Mock data for initial display - will be replaced with real API calls
@@ -60,7 +62,14 @@ const mockAnalytics = {
     validation: 31,
     submission: 12,
     other: 8
-  }
+  },
+  activeSchedules: 4,
+  totalSchedules: 5,
+  upcomingScheduledTests: [
+    { id: "sched-001", name: "Daily Login Test", url: "https://example.com/login", nextRun: "2025-03-29T08:00:00Z" },
+    { id: "sched-002", name: "Weekly Registration Form", url: "https://example.com/register", nextRun: "2025-04-01T09:00:00Z" },
+    { id: "sched-003", name: "Monthly Newsletter Signup", url: "https://example.com/newsletter", nextRun: "2025-04-01T10:00:00Z" }
+  ]
 };
 
 // Format the error breakdown for the donut chart
@@ -94,6 +103,12 @@ export default function Dashboard() {
     // In a real implementation, we would fetch the data here
     // api.analytics.getOverview({ timeRange }).then(data => { ... })
   }, [timeRange]);
+
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
   return (
     <div className="space-y-6">
@@ -151,6 +166,78 @@ export default function Dashboard() {
           </Flex>
         </Card>
       </Grid>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <Title>Quick Actions</Title>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link 
+              href="/run-test" 
+              className="flex items-center p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors duration-150"
+            >
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center mr-3">
+                <ArrowPathIcon className="h-5 w-5 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-neutral-900">Run Test</h3>
+                <p className="text-xs text-neutral-500">Test a form now</p>
+              </div>
+            </Link>
+            
+            <Link 
+              href="/schedules/new" 
+              className="flex items-center p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors duration-150"
+            >
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center mr-3">
+                <PlusIcon className="h-5 w-5 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-neutral-900">New Schedule</h3>
+                <p className="text-xs text-neutral-500">Create a recurring test</p>
+              </div>
+            </Link>
+          </div>
+        </Card>
+        
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <Title>Active Schedules</Title>
+            <Link href="/schedules" className="text-primary-600 hover:text-primary-800 text-sm">
+              View all
+            </Link>
+          </div>
+          <div className="flex items-center mb-4">
+            <CalendarIcon className="h-8 w-8 text-primary-500 mr-3" />
+            <div>
+              <div className="text-2xl font-semibold">{mockAnalytics.activeSchedules}</div>
+              <div className="text-xs text-neutral-500">{mockAnalytics.activeSchedules} of {mockAnalytics.totalSchedules} schedules active</div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            {mockAnalytics.upcomingScheduledTests.map((schedule) => (
+              <Link 
+                key={schedule.id} 
+                href={`/schedules/${schedule.id}`}
+                className="block p-3 hover:bg-neutral-50 rounded-md border border-neutral-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-sm font-semibold">{schedule.name}</div>
+                    <div className="text-xs text-neutral-500">{schedule.url}</div>
+                  </div>
+                  <div className="text-xs text-neutral-500">
+                    Next run: {formatDate(schedule.nextRun)}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
