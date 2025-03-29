@@ -1,0 +1,116 @@
+service: form-testing-lambda
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  memorySize: 2048
+  timeout: 60
+  region: us-east-1
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${sls:stage}
+    REGION: ${self:provider.region}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:BatchWriteItem
+      Resource: 
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource: "arn:aws:s3:::${self:service}-screenshots-${sls:stage}/*"
+
+plugins:
+  - serverless-webpack
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+    packagerOptions:
+      scripts:
+        - npm rebuild playwright-core
+
+functions:
+  runTest:
+    handler: src/handlers/run-test.handler
+    events:
+      - httpApi:
+          path: /run-test
+          method: post
+          cors: true
+  getTestResults:
+    handler: src/handlers/get-test-results.handler
+    events:
+      - httpApi:
+          path: /test-results
+          method: get
+          cors: true
+  getTestResultDetail:
+    handler: src/handlers/get-test-result-detail.handler
+    events:
+      - httpApi:
+          path: /test-results/{id}
+          method: get
+          cors: true
+  scheduleTest:
+    handler: src/handlers/schedule-test.handler
+    events:
+      - httpApi:
+          path: /schedule-test
+          method: post
+          cors: true
+  runScheduledTest:
+    handler: src/handlers/run-scheduled-test.handler
+    events:
+      - schedule: rate(1 hour)
+
+resources:
+  Resources:
+    FormTestingTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: url
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UrlIndex
+            KeySchema:
+              - AttributeName: url
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    ScreenshotBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-screenshots-${sls:stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+              AllowedOrigins:
+                - '*'
+              MaxAge: 3000
