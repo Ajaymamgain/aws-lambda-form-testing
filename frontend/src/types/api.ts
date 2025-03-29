@@ -73,7 +73,15 @@ export interface TestResult {
       submissionTime?: number;
     };
   };
-  type: 'test';
+}
+
+// Test Configuration
+export interface TestConfig {
+  url: string;
+  name?: string;
+  description?: string;
+  formConfig: FormConfig;
+  userData: UserData;
 }
 
 // Schedule
@@ -81,57 +89,44 @@ export interface Schedule {
   id: string;
   name: string;
   description?: string;
-  url: string;
-  formConfig: FormConfig;
-  userData: UserData;
-  frequency: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
+  testConfig: TestConfig;
   cronExpression: string;
-  specificTime?: string; // HH:MM format
   active: boolean;
   createdAt: string;
-  updatedAt: string;
-  lastRunTime?: string;
-  nextRunTime?: string;
-  runs: string[]; // Array of test IDs
-  ruleArn?: string;
-  stats?: {
-    total: number;
-    success: number;
-    failed: number;
+  updatedAt?: string;
+  lastRun?: string;
+  nextRun?: string;
+  statistics?: {
+    totalRuns: number;
+    successfulRuns: number;
+    failedRuns: number;
   };
-  lastTestId?: string;
-  lastTestStatus?: 'success' | 'failed' | 'completed';
-  type: 'schedule';
 }
 
 // Simplified schedule info for inclusion in test results
 export interface ScheduleInfo {
   id: string;
   name: string;
-  frequency: string;
+  cronExpression: string;
   active: boolean;
-  lastRunTime?: string;
-  nextRunTime?: string;
+  lastRun?: string;
+  nextRun?: string;
 }
 
 // API Requests
 export interface RunTestRequest {
   url: string;
-  formConfig: FormConfig;
-  userData: UserData;
   name?: string;
   description?: string;
+  formConfig: FormConfig;
+  userData: UserData;
 }
 
 export interface ScheduleTestRequest {
   name: string;
   description?: string;
-  url: string;
-  formConfig: FormConfig;
-  userData: UserData;
-  frequency: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
-  customCronExpression?: string;
-  specificTime?: string;
+  cronExpression: string;
+  testConfig: TestConfig;
   active?: boolean;
 }
 
@@ -162,7 +157,33 @@ export interface ScheduleTestResponse {
   message: string;
   scheduleId: string;
   name: string;
-  frequency: string;
   cronExpression: string;
   active: boolean;
+}
+
+export interface ScheduleListResponse {
+  items: Schedule[];
+  nextToken?: string;
+}
+
+export interface ScheduleRunsResponse {
+  items: Omit<TestResult, 'logs' | 'formConfig' | 'userData'>[];
+  summary: {
+    total: number;
+    successful: number;
+    failed: number;
+    avgDuration: number;
+  };
+  nextToken?: string;
+}
+
+export interface ToggleScheduleResponse {
+  message: string;
+  scheduleId: string;
+  active: boolean;
+}
+
+export interface DeleteScheduleResponse {
+  message: string;
+  scheduleId: string;
 }
