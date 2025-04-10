@@ -82,7 +82,15 @@ functions:
   scheduleTest:
     handler: src/handlers/schedule-test.handler
     environment:
-      RUN_SCHEDULED_TEST_LAMBDA_ARN: !GetAtt RunScheduledTestLambdaFunction.Arn
+      # Use constructed ARN to avoid circular reference
+      RUN_SCHEDULED_TEST_LAMBDA_ARN:
+        Fn::Join:
+          - ":"
+          - - "arn:aws:lambda"
+            - Ref: "AWS::Region"
+            - Ref: "AWS::AccountId"
+            - "function"
+            - "${self:service}-${sls:stage}-runScheduledTest"
     events:
       - httpApi:
           path: /schedule-test
@@ -91,7 +99,8 @@ functions:
   runScheduledTest:
     handler: src/handlers/run-scheduled-test.handler
     environment:
-      AWS_LAMBDA_FUNCTION_NAME: !Ref RunScheduledTestLambdaFunction
+      # Use string value instead of reference
+      AWS_LAMBDA_FUNCTION_NAME: "${self:service}-${sls:stage}-runScheduledTest"
     events:
       - schedule: rate(1 hour)
 
