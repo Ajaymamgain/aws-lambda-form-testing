@@ -211,13 +211,26 @@ exports.handler = async (event) => {
         
         const ruleResult = await eventBridge.putRule(ruleParams).promise();
         
+        // Get the Lambda ARN from environment or construct it
+        // In this case, we need to construct it the same way as in serverless.yml
+        let lambdaArn = process.env.RUN_SCHEDULED_TEST_LAMBDA_ARN;
+        
+        if (!lambdaArn) {
+          // Construct ARN if not provided 
+          const region = process.env.REGION || 'us-east-1';
+          const accountId = process.env.ACCOUNT_ID; // This should be set in your environment
+          const functionName = `${process.env.SERVICE_NAME || 'form-testing-lambda'}-${process.env.STAGE || 'dev'}-runScheduledTest`;
+          
+          lambdaArn = `arn:aws:lambda:${region}:${accountId}:function:${functionName}`;
+        }
+        
         // Set the target for the rule
         const targetParams = {
           Rule: ruleName,
           Targets: [
             {
               Id: `form-test-target-${scheduleId}`,
-              Arn: process.env.RUN_SCHEDULED_TEST_LAMBDA_ARN,
+              Arn: lambdaArn,
               Input: JSON.stringify({
                 scheduleId,
                 name: existingSchedule.name,
