@@ -15,6 +15,8 @@ provider:
     STAGE: ${sls:stage}
     SERVICE_NAME: ${self:service}
     ACCOUNT_ID: !Ref AWS::AccountId
+    # Use custom name that isn't a reserved AWS environment variable
+    LAMBDA_FUNCTION_NAME: "${self:service}-${sls:stage}-runScheduledTest"
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -102,9 +104,6 @@ functions:
           cors: true
   runScheduledTest:
     handler: src/handlers/run-scheduled-test.handler
-    environment:
-      # Use string value instead of reference
-      AWS_LAMBDA_FUNCTION_NAME: "${self:service}-${sls:stage}-runScheduledTest"
     events:
       - schedule: rate(1 hour)
 
