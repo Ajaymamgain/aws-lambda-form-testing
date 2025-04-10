@@ -107,7 +107,15 @@ export default function Dashboard() {
   // Helper function to format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(date).replace(/\//g, '/');
   };
 
   return (
@@ -116,8 +124,8 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Analytics Dashboard</h1>
         <div className="flex space-x-2">
-          <TabGroup>
-            <TabList variant="solid" defaultValue="7days" onValueChange={setTimeRange}>
+          <TabGroup defaultValue="7days" onValueChange={setTimeRange}>
+            <TabList>
               <Tab value="24h">24h</Tab>
               <Tab value="7days">7 days</Tab>
               <Tab value="30days">30 days</Tab>
@@ -250,7 +258,6 @@ export default function Dashboard() {
             index="date"
             categories={["successful", "failed"]}
             colors={["emerald", "rose"]}
-            showLegend={true}
             valueFormatter={(value) => `${value} tests`}
           />
         </Card>
@@ -298,11 +305,11 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <div className="text-xs text-neutral-500 mt-1">
-                      {new Date(failure.createdAt).toLocaleString()} • {failure.errorCount} errors
+                      {formatDate(failure.createdAt)} • {failure.errorCount} errors
                     </div>
                   </div>
                   <div className="text-neutral-400">
-                    <span className="text-xs">ID: {failure.id.substring(0, 8)}</span>
+                    <span className="text-xs">ID: {failure.id}</span>
                   </div>
                 </div>
               </Link>
