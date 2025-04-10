@@ -11,6 +11,8 @@ provider:
   environment:
     DYNAMODB_TABLE: ${self:service}-${sls:stage}
     REGION: ${self:provider.region}
+    SCREENSHOTS_BUCKET: ${self:service}-screenshots-${sls:stage}
+    STAGE: ${sls:stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -29,6 +31,20 @@ provider:
         - s3:PutObject
         - s3:GetObject
       Resource: "arn:aws:s3:::${self:service}-screenshots-${sls:stage}/*"
+    - Effect: Allow
+      Action:
+        - events:PutRule
+        - events:PutTargets
+        - events:DeleteRule
+        - events:RemoveTargets
+        - events:DisableRule
+        - events:EnableRule
+        - events:ListRules
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "*"
 
 plugins:
   - serverless-webpack
@@ -65,6 +81,8 @@ functions:
           cors: true
   scheduleTest:
     handler: src/handlers/schedule-test.handler
+    environment:
+      RUN_SCHEDULED_TEST_LAMBDA_ARN: !GetAtt RunScheduledTestLambdaFunction.Arn
     events:
       - httpApi:
           path: /schedule-test
@@ -72,8 +90,54 @@ functions:
           cors: true
   runScheduledTest:
     handler: src/handlers/run-scheduled-test.handler
+    environment:
+      AWS_LAMBDA_FUNCTION_NAME: !Ref RunScheduledTestLambdaFunction
     events:
       - schedule: rate(1 hour)
+
+# Add additional endpoints for managing schedules
+  getSchedules:
+    handler: src/handlers/get-schedules.handler
+    events:
+      - httpApi:
+          path: /schedules
+          method: get
+          cors: true
+  getScheduleDetail:
+    handler: src/handlers/get-schedule-detail.handler
+    events:
+      - httpApi:
+          path: /schedules/{id}
+          method: get
+          cors: true
+  updateSchedule:
+    handler: src/handlers/update-schedule.handler
+    events:
+      - httpApi:
+          path: /schedules/{id}
+          method: patch
+          cors: true
+  setScheduleActive:
+    handler: src/handlers/set-schedule-active.handler
+    events:
+      - httpApi:
+          path: /schedules/{id}/active
+          method: patch
+          cors: true
+  deleteSchedule:
+    handler: src/handlers/delete-schedule.handler
+    events:
+      - httpApi:
+          path: /schedules/{id}
+          method: delete
+          cors: true
+  getScheduleRuns:
+    handler: src/handlers/get-schedule-runs.handler
+    events:
+      - httpApi:
+          path: /schedules/{id}/runs
+          method: get
+          cors: true
 
 resources:
   Resources:
@@ -89,6 +153,8 @@ resources:
             AttributeType: S
           - AttributeName: createdAt
             AttributeType: S
+          - AttributeName: type
+            AttributeType: S
         KeySchema:
           - AttributeName: id
             KeyType: HASH
@@ -96,6 +162,14 @@ resources:
           - IndexName: UrlIndex
             KeySchema:
               - AttributeName: url
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: TypeIndex
+            KeySchema:
+              - AttributeName: type
                 KeyType: HASH
               - AttributeName: createdAt
                 KeyType: RANGE
