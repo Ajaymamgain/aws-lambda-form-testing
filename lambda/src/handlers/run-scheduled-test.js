@@ -68,7 +68,8 @@ exports.handler = async (event) => {
     const runPromises = schedulesToRun.map(schedule => {
       // Invoke this lambda function for each schedule to run
       const params = {
-        FunctionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
+        // Use the LAMBDA_FUNCTION_NAME env var instead of AWS_LAMBDA_FUNCTION_NAME
+        FunctionName: process.env.LAMBDA_FUNCTION_NAME || process.env.AWS_LAMBDA_FUNCTION_NAME,
         InvocationType: 'Event', // Asynchronous invocation
         Payload: JSON.stringify({
           scheduleId: schedule.id,
