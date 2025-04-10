@@ -13,6 +13,8 @@ provider:
     REGION: ${self:provider.region}
     SCREENSHOTS_BUCKET: ${self:service}-screenshots-${sls:stage}
     STAGE: ${sls:stage}
+    SERVICE_NAME: ${self:service}
+    ACCOUNT_ID: !Ref AWS::AccountId
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -23,6 +25,7 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
         - dynamodb:BatchWriteItem
+        - dynamodb:BatchGetItem
       Resource: 
         - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
         - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
@@ -40,6 +43,7 @@ provider:
         - events:DisableRule
         - events:EnableRule
         - events:ListRules
+        - events:ListTargetsByRule
       Resource: "*"
     - Effect: Allow
       Action:
@@ -128,6 +132,16 @@ functions:
           cors: true
   setScheduleActive:
     handler: src/handlers/set-schedule-active.handler
+    environment:
+      # Use constructed ARN to avoid circular reference
+      RUN_SCHEDULED_TEST_LAMBDA_ARN:
+        Fn::Join:
+          - ":"
+          - - "arn:aws:lambda"
+            - Ref: "AWS::Region"
+            - Ref: "AWS::AccountId"
+            - "function"
+            - "${self:service}-${sls:stage}-runScheduledTest"
     events:
       - httpApi:
           path: /schedules/{id}/active
