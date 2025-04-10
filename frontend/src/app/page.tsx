@@ -7,17 +7,9 @@ import {
   Metric, 
   Text, 
   Title, 
-  AreaChart, 
-  DonutChart, 
-  BarList, 
-  Bold, 
   Flex, 
   Grid, 
-  Tab,
-  TabGroup,
-  TabList,
-  TabPanel,
-  TabPanels 
+  BarList
 } from "@tremor/react";
 import { 
   CheckCircleIcon, 
@@ -46,23 +38,6 @@ const mockAnalytics = {
     { id: "test456", url: "login.example.com", status: "failed", createdAt: "2025-03-28T10:15:42Z", errorCount: 1 },
     { id: "test789", url: "signup-form.example.com", status: "failed", createdAt: "2025-03-27T22:44:19Z", errorCount: 2 }
   ],
-  testsByDay: [
-    { date: "2025-03-22", total: 35, successful: 31, failed: 4 },
-    { date: "2025-03-23", total: 38, successful: 35, failed: 3 },
-    { date: "2025-03-24", total: 42, successful: 36, failed: 6 },
-    { date: "2025-03-25", total: 45, successful: 39, failed: 6 },
-    { date: "2025-03-26", total: 39, successful: 33, failed: 6 },
-    { date: "2025-03-27", total: 41, successful: 35, failed: 6 },
-    { date: "2025-03-28", total: 46, successful: 40, failed: 6 }
-  ],
-  errorBreakdown: {
-    field: 24,
-    navigation: 8,
-    timeout: 17,
-    validation: 31,
-    submission: 12,
-    other: 8
-  },
   activeSchedules: 4,
   totalSchedules: 5,
   upcomingScheduledTests: [
@@ -70,24 +45,6 @@ const mockAnalytics = {
     { id: "sched-002", name: "Weekly Registration Form", url: "https://example.com/register", nextRun: "2025-04-01T09:00:00Z" },
     { id: "sched-003", name: "Monthly Newsletter Signup", url: "https://example.com/newsletter", nextRun: "2025-04-01T10:00:00Z" }
   ]
-};
-
-// Format the error breakdown for the donut chart
-const errorBreakdownData = [
-  { name: "Field Errors", value: mockAnalytics.errorBreakdown.field },
-  { name: "Navigation Errors", value: mockAnalytics.errorBreakdown.navigation },
-  { name: "Timeout Errors", value: mockAnalytics.errorBreakdown.timeout },
-  { name: "Validation Errors", value: mockAnalytics.errorBreakdown.validation },
-  { name: "Submission Errors", value: mockAnalytics.errorBreakdown.submission },
-  { name: "Other Errors", value: mockAnalytics.errorBreakdown.other },
-];
-
-// Color mapping for status badges
-const statusColors = {
-  success: "emerald",
-  failed: "rose",
-  running: "blue",
-  completed: "amber",
 };
 
 export default function Dashboard() {
@@ -107,15 +64,14 @@ export default function Dashboard() {
   // Helper function to format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-GB', {
+    return date.toLocaleString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }).format(date).replace(/\//g, '/');
+      second: '2-digit'
+    });
   };
 
   return (
@@ -124,14 +80,32 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Analytics Dashboard</h1>
         <div className="flex space-x-2">
-          <TabGroup defaultValue="7days" onValueChange={setTimeRange}>
-            <TabList>
-              <Tab value="24h">24h</Tab>
-              <Tab value="7days">7 days</Tab>
-              <Tab value="30days">30 days</Tab>
-              <Tab value="all">All time</Tab>
-            </TabList>
-          </TabGroup>
+          <div className="bg-gray-100 p-1 rounded-md flex">
+            <button 
+              onClick={() => setTimeRange("24h")}
+              className={`px-3 py-1 text-sm rounded-md ${timeRange === "24h" ? "bg-white shadow" : ""}`}
+            >
+              24h
+            </button>
+            <button 
+              onClick={() => setTimeRange("7days")}
+              className={`px-3 py-1 text-sm rounded-md ${timeRange === "7days" ? "bg-white shadow" : ""}`}
+            >
+              7 days
+            </button>
+            <button 
+              onClick={() => setTimeRange("30days")}
+              className={`px-3 py-1 text-sm rounded-md ${timeRange === "30days" ? "bg-white shadow" : ""}`}
+            >
+              30 days
+            </button>
+            <button 
+              onClick={() => setTimeRange("all")}
+              className={`px-3 py-1 text-sm rounded-md ${timeRange === "all" ? "bg-white shadow" : ""}`}
+            >
+              All time
+            </button>
+          </div>
         </div>
       </div>
       
@@ -247,32 +221,28 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts */}
+      {/* Charts - Simplified to avoid rendering issues */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Test results over time */}
+        {/* Test results over time - Placeholder */}
         <Card>
           <Title>Test Results Over Time</Title>
-          <AreaChart
-            className="h-72 mt-4"
-            data={mockAnalytics.testsByDay}
-            index="date"
-            categories={["successful", "failed"]}
-            colors={["emerald", "rose"]}
-            valueFormatter={(value) => `${value} tests`}
-          />
+          <div className="h-72 mt-4 bg-gray-50 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-500">Chart visualization of test results over time</p>
+              <p className="text-xs text-gray-400 mt-2">Bar chart showing successful vs failed tests</p>
+            </div>
+          </div>
         </Card>
 
-        {/* Error distribution */}
+        {/* Error distribution - Placeholder */}
         <Card>
           <Title>Error Distribution</Title>
-          <DonutChart
-            className="h-72 mt-4"
-            data={errorBreakdownData}
-            category="value"
-            index="name"
-            colors={["blue", "cyan", "indigo", "violet", "fuchsia", "rose"]}
-            valueFormatter={(value) => `${value} errors`}
-          />
+          <div className="h-72 mt-4 bg-gray-50 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-500">Error distribution pie chart</p>
+              <p className="text-xs text-gray-400 mt-2">Showing types of errors encountered</p>
+            </div>
+          </div>
         </Card>
       </div>
 
