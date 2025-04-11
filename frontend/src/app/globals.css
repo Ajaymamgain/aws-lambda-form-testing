@@ -109,6 +109,25 @@ body {
   }
 }
 
+/* Fix for header buttons */
+header .btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-700 shadow;
+}
+
+/* Sidebar active item fix */
+.sidebar-item.active {
+  @apply bg-primary-50 text-primary-700;
+}
+
+.sidebar-item.active svg {
+  @apply text-primary-600;
+}
+
+/* Mobile sidebar fix */
+.mobile-sidebar-open {
+  @apply translate-x-0;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -127,4 +146,23 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Time filter buttons */
+.time-filter-button {
+  @apply px-3 py-1 text-sm rounded-md;
+}
+
+.time-filter-button.active {
+  @apply bg-white shadow;
+}
+
+/* Chart placeholder styling */
+.chart-placeholder {
+  @apply flex items-center justify-center h-full;
+}
+
+/* Form component fixes */
+.form-field {
+  @apply p-4 border border-neutral-200 rounded-md bg-neutral-50;
 }
