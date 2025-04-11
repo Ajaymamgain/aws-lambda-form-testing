@@ -1,0 +1,1 @@
+// Content of NewTest.js component
