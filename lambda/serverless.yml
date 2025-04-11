@@ -1,23 +1,26 @@
-service: form-testing-lambda
+service: form-testing-service
 
 frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  timeout: 30
   memorySize: 2048
-  timeout: 60
-  region: us-east-1
   environment:
-    DYNAMODB_TABLE: ${self:service}-${sls:stage}
-    REGION: ${self:provider.region}
-    SCREENSHOTS_BUCKET: ${self:service}-screenshots-${sls:stage}
-    STAGE: ${sls:stage}
-    SERVICE_NAME: ${self:service}
-    ACCOUNT_ID: !Ref AWS::AccountId
-    # Use custom name that isn't a reserved AWS environment variable
-    LAMBDA_FUNCTION_NAME: "${self:service}-${sls:stage}-runScheduledTest"
+    RESULTS_BUCKET: ${self:custom.resultsBucket}
+    TESTS_TABLE: ${self:service}-${self:provider.stage}-tests
+    SCHEDULES_TABLE: ${self:service}-${self:provider.stage}-schedules
+    NODE_OPTIONS: '--enable-source-maps'
   iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+      Resource: 
+        - arn:aws:s3:::${self:custom.resultsBucket}/*
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -26,187 +29,175 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-        - dynamodb:BatchGetItem
-      Resource: 
-        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
-        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
-    - Effect: Allow
-      Action:
-        - s3:PutObject
-        - s3:GetObject
-      Resource: "arn:aws:s3:::${self:service}-screenshots-${sls:stage}/*"
-    - Effect: Allow
-      Action:
-        - events:PutRule
-        - events:PutTargets
-        - events:DeleteRule
-        - events:RemoveTargets
-        - events:DisableRule
-        - events:EnableRule
-        - events:ListRules
-        - events:ListTargetsByRule
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - lambda:InvokeFunction
-      Resource: "*"
-
-plugins:
-  - serverless-webpack
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${self:provider.stage}-tests
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-${self:provider.stage}-schedules
 
 custom:
+  resultsBucket: ${self:service}-results-${self:provider.stage}
   webpack:
-    webpackConfig: ./webpack.config.js
+    webpackConfig: webpack.config.js
     includeModules: true
     packagerOptions:
       scripts:
-        - npm rebuild playwright-core
+        - rm -rf node_modules/puppeteer/.local-chromium
+  prune:
+    automatic: true
+    number: 3
 
 functions:
   runTest:
-    handler: src/handlers/run-test.handler
+    handler: src/handlers/runTest.handler
     events:
-      - httpApi:
-          path: /run-test
+      - http:
+          path: /tests
           method: post
           cors: true
-  getTestResults:
-    handler: src/handlers/get-test-results.handler
-    events:
-      - httpApi:
-          path: /test-results
-          method: get
-          cors: true
-  getTestResultDetail:
-    handler: src/handlers/get-test-result-detail.handler
-    events:
-      - httpApi:
-          path: /test-results/{id}
-          method: get
-          cors: true
-  scheduleTest:
-    handler: src/handlers/schedule-test.handler
-    environment:
-      # Use constructed ARN to avoid circular reference
-      RUN_SCHEDULED_TEST_LAMBDA_ARN:
-        Fn::Join:
-          - ":"
-          - - "arn:aws:lambda"
-            - Ref: "AWS::Region"
-            - Ref: "AWS::AccountId"
-            - "function"
-            - "${self:service}-${sls:stage}-runScheduledTest"
-    events:
-      - httpApi:
-          path: /schedule-test
-          method: post
-          cors: true
-  runScheduledTest:
-    handler: src/handlers/run-scheduled-test.handler
-    events:
-      - schedule: rate(1 hour)
+    layers:
+      - arn:aws:lambda:${self:provider.region}:764866452798:layer:chrome-aws-lambda:40
 
-# Add additional endpoints for managing schedules
-  getSchedules:
-    handler: src/handlers/get-schedules.handler
+  getTestResult:
+    handler: src/handlers/getTestResult.handler
     events:
-      - httpApi:
+      - http:
+          path: /tests/{testId}
+          method: get
+          cors: true
+
+  listTests:
+    handler: src/handlers/listTests.handler
+    events:
+      - http:
+          path: /tests
+          method: get
+          cors: true
+
+  createSchedule:
+    handler: src/handlers/createSchedule.handler
+    events:
+      - http:
+          path: /schedules
+          method: post
+          cors: true
+
+  updateSchedule:
+    handler: src/handlers/updateSchedule.handler
+    events:
+      - http:
+          path: /schedules/{scheduleId}
+          method: put
+          cors: true
+
+  deleteSchedule:
+    handler: src/handlers/deleteSchedule.handler
+    events:
+      - http:
+          path: /schedules/{scheduleId}
+          method: delete
+          cors: true
+
+  listSchedules:
+    handler: src/handlers/listSchedules.handler
+    events:
+      - http:
           path: /schedules
           method: get
           cors: true
-  getScheduleDetail:
-    handler: src/handlers/get-schedule-detail.handler
+
+  getAnalytics:
+    handler: src/handlers/getAnalytics.handler
     events:
-      - httpApi:
-          path: /schedules/{id}
-          method: get
-          cors: true
-  updateSchedule:
-    handler: src/handlers/update-schedule.handler
-    events:
-      - httpApi:
-          path: /schedules/{id}
-          method: patch
-          cors: true
-  setScheduleActive:
-    handler: src/handlers/set-schedule-active.handler
-    environment:
-      # Use constructed ARN to avoid circular reference
-      RUN_SCHEDULED_TEST_LAMBDA_ARN:
-        Fn::Join:
-          - ":"
-          - - "arn:aws:lambda"
-            - Ref: "AWS::Region"
-            - Ref: "AWS::AccountId"
-            - "function"
-            - "${self:service}-${sls:stage}-runScheduledTest"
-    events:
-      - httpApi:
-          path: /schedules/{id}/active
-          method: patch
-          cors: true
-  deleteSchedule:
-    handler: src/handlers/delete-schedule.handler
-    events:
-      - httpApi:
-          path: /schedules/{id}
-          method: delete
-          cors: true
-  getScheduleRuns:
-    handler: src/handlers/get-schedule-runs.handler
-    events:
-      - httpApi:
-          path: /schedules/{id}/runs
+      - http:
+          path: /analytics
           method: get
           cors: true
 
+  processScheduledTests:
+    handler: src/handlers/processScheduledTests.handler
+    events:
+      - schedule: rate(5 minutes)
+
 resources:
   Resources:
-    FormTestingTable:
+    TestsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE}
-        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-tests
         AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: url
+          - AttributeName: testId
             AttributeType: S
           - AttributeName: createdAt
             AttributeType: S
-          - AttributeName: type
-            AttributeType: S
         KeySchema:
-          - AttributeName: id
+          - AttributeName: testId
             KeyType: HASH
         GlobalSecondaryIndexes:
-          - IndexName: UrlIndex
+          - IndexName: CreatedAtIndex
             KeySchema:
-              - AttributeName: url
-                KeyType: HASH
               - AttributeName: createdAt
-                KeyType: RANGE
+                KeyType: HASH
             Projection:
               ProjectionType: ALL
-          - IndexName: TypeIndex
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
+
+    SchedulesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-schedules
+        AttributeDefinitions:
+          - AttributeName: scheduleId
+            AttributeType: S
+          - AttributeName: nextRunTime
+            AttributeType: S
+        KeySchema:
+          - AttributeName: scheduleId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: NextRunTimeIndex
             KeySchema:
-              - AttributeName: type
+              - AttributeName: nextRunTime
                 KeyType: HASH
-              - AttributeName: createdAt
-                KeyType: RANGE
             Projection:
               ProjectionType: ALL
-    ScreenshotBucket:
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
+
+    ResultsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:service}-screenshots-${sls:stage}
+        BucketName: ${self:custom.resultsBucket}
         CorsConfiguration:
           CorsRules:
             - AllowedHeaders:
                 - '*'
               AllowedMethods:
                 - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
               AllowedOrigins:
                 - '*'
               MaxAge: 3000
+
+    ResultsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref ResultsBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource: !Join ['', ['arn:aws:s3:::', !Ref ResultsBucket, '/*']]
+
+plugins:
+  - serverless-webpack
+  - serverless-prune-plugin
