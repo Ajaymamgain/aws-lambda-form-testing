@@ -1,5 +1,6 @@
 const path = require('path');
 const slsw = require('serverless-webpack');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
   entry: slsw.lib.entries,
@@ -12,12 +13,39 @@ module.exports = {
     hints: false,
   },
   devtool: 'source-map',
-  externals: [
-    /aws-sdk/, // Exclude aws-sdk as it's provided by Lambda
-    /playwright-core/, // Large dependency, will be included via layers
-  ],
+  externals: [nodeExternals()],
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              presets: [
+                [
+                  '@babel/preset-env',
+                  {
+                    targets: {
+                      node: '18',
+                    },
+                  },
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  },
   resolve: {
-    extensions: ['.js', '.json'],
+    extensions: ['.js'],
+    alias: {
+      '@src': path.resolve(__dirname, 'src/'),
+      '@utils': path.resolve(__dirname, 'src/utils/'),
+      '@handlers': path.resolve(__dirname, 'src/handlers/'),
+    },
   },
   output: {
     libraryTarget: 'commonjs2',
