@@ -8,6 +8,14 @@ const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 const RESULTS_BUCKET = process.env.RESULTS_BUCKET;
 const TESTS_TABLE = process.env.TESTS_TABLE;
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'];
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',  // In production, you should specify your domain
+  'Access-Control-Allow-Credentials': true,
+  'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
+};
 
 async function initBrowser() {
   let browser;
@@ -158,10 +166,30 @@ async function validateForm(page, config) {
 }
 
 exports.handler = async (event) => {
+  // Handle preflight requests
+  if (event.requestContext?.http?.method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: '',
+    };
+  }
+
   let browser;
   try {
     const testId = uuidv4();
     const { url, config } = JSON.parse(event.body);
+
+    // Validate input
+    if (!url) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          error: 'URL is required',
+        }),
+      };
+    }
 
     // Initialize browser
     browser = await initBrowser();
@@ -171,6 +199,8 @@ exports.handler = async (event) => {
     await page.setViewport({ width: 1280, height: 800 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
+    const startTime = Date.now();
+
     // Navigate to page
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
 
@@ -179,6 +209,9 @@ exports.handler = async (event) => {
 
     // Run form validation
     const testResults = await validateForm(page, config);
+
+    const endTime = Date.now();
+    const duration = (endTime - startTime) / 1000; // Duration in seconds
 
     // Save screenshot to S3
     await s3.putObject({
@@ -200,30 +233,26 @@ exports.handler = async (event) => {
         screenshotUrl: `${RESULTS_BUCKET}/${testId}/screenshot.png`,
         createdAt: timestamp,
         updatedAt: timestamp,
+        duration,
         status: testResults.errors.length > 0 ? 'failed' : 'success',
       },
     }).promise();
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: corsHeaders,
       body: JSON.stringify({
         testId,
         results: testResults,
         screenshotUrl: `${RESULTS_BUCKET}/${testId}/screenshot.png`,
+        duration,
       }),
     };
   } catch (error) {
     console.error('Test execution failed:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: corsHeaders,
       body: JSON.stringify({
         error: 'Test execution failed',
         message: error.message,
