@@ -16,24 +16,7 @@ provider:
     NODE_OPTIONS: '--enable-source-maps'
     ALLOWED_ORIGINS: 'http://localhost:3001'
   httpApi:
-    cors:
-      allowedOrigins: 
-        - http://localhost:3001
-      allowedHeaders:
-        - Content-Type
-        - Authorization
-        - X-Api-Key
-        - X-Amz-Security-Token
-        - X-Amz-User-Agent
-      allowedMethods:
-        - GET
-        - POST
-        - PUT
-        - DELETE
-        - PATCH
-        - OPTIONS
-      allowCredentials: true
-      maxAge: 86400
+    cors: true  # This enables CORS with default settings for local development
   iamRoleStatements:
     - Effect: Allow
       Action:
