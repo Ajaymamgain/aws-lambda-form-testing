@@ -14,12 +14,11 @@ provider:
     TESTS_TABLE: ${self:service}-${self:provider.stage}-tests
     SCHEDULES_TABLE: ${self:service}-${self:provider.stage}-schedules
     NODE_OPTIONS: '--enable-source-maps'
-    ALLOWED_ORIGINS: 'http://localhost:3001,https://your-production-domain.com'
+    ALLOWED_ORIGINS: 'http://localhost:3001'
   httpApi:
     cors:
       allowedOrigins: 
         - http://localhost:3001
-        - https://your-production-domain.com
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -34,8 +33,6 @@ provider:
         - PATCH
         - OPTIONS
       allowCredentials: true
-      exposedHeaders:
-        - Special-Response-Header
       maxAge: 86400
   iamRoleStatements:
     - Effect: Allow
@@ -179,37 +176,6 @@ resources:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
         BillingMode: PAY_PER_REQUEST
-
-    ResultsBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: ${self:custom.resultsBucket}
-        CorsConfiguration:
-          CorsRules:
-            - AllowedHeaders:
-                - '*'
-              AllowedMethods:
-                - GET
-                - PUT
-                - POST
-                - DELETE
-                - HEAD
-              AllowedOrigins:
-                - '*'
-              MaxAge: 3000
-
-    ResultsBucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: !Ref ResultsBucket
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal: '*'
-              Action:
-                - s3:GetObject
-              Resource: !Join ['', ['arn:aws:s3:::', !Ref ResultsBucket, '/*']]
 
 plugins:
   - serverless-webpack
