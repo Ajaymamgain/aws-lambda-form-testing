@@ -64,14 +64,15 @@ export default function Dashboard() {
   // Helper function to format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-GB', {
+    return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
-    });
+      second: '2-digit',
+      hour12: false
+    }).format(date).replace(/\//g, '/');
   };
 
   return (
@@ -221,27 +222,21 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts - Simplified to avoid rendering issues */}
+      {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Test results over time - Placeholder */}
+        {/* Test results over time */}
         <Card>
           <Title>Test Results Over Time</Title>
-          <div className="h-72 mt-4 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-500">Chart visualization of test results over time</p>
-              <p className="text-xs text-gray-400 mt-2">Bar chart showing successful vs failed tests</p>
-            </div>
+          <div className="h-72 mt-4 flex items-center justify-center">
+            <div className="text-neutral-500">Chart data loading...</div>
           </div>
         </Card>
 
-        {/* Error distribution - Placeholder */}
+        {/* Error distribution */}
         <Card>
           <Title>Error Distribution</Title>
-          <div className="h-72 mt-4 bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-500">Error distribution pie chart</p>
-              <p className="text-xs text-gray-400 mt-2">Showing types of errors encountered</p>
-            </div>
+          <div className="h-72 mt-4 flex items-center justify-center">
+            <div className="text-neutral-500">Chart data loading...</div>
           </div>
         </Card>
       </div>
