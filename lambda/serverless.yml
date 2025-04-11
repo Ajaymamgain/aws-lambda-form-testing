@@ -177,6 +177,11 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.resultsBucket}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
         CorsConfiguration:
           CorsRules:
             - AllowedHeaders:
@@ -188,7 +193,7 @@ resources:
                 - DELETE
                 - HEAD
               AllowedOrigins:
-                - '*'
+                - http://localhost:3001
               MaxAge: 3000
 
     ResultsBucketPolicy:
@@ -199,10 +204,35 @@ resources:
           Version: '2012-10-17'
           Statement:
             - Effect: Allow
-              Principal: '*'
+              Principal:
+                AWS: !GetAtt LambdaRole.Arn
               Action:
                 - s3:GetObject
+                - s3:PutObject
               Resource: !Join ['', ['arn:aws:s3:::', !Ref ResultsBucket, '/*']]
+
+    LambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: lambda.amazonaws.com
+              Action: sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: s3-access
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                  Resource: !Join ['', ['arn:aws:s3:::', !Ref ResultsBucket, '/*']]
 
 plugins:
   - serverless-webpack
