@@ -1,139 +1,204 @@
-# AWS Lambda Form Testing
+# Form Testing System
 
-Automated form testing system using AWS Lambda with Playwright headless browser and Next.js frontend.
+A comprehensive automated form testing system using AWS Lambda with headless browser and Next.js frontend.
 
 ## Features
 
-- Automated form testing using Playwright in AWS Lambda
-- Next.js frontend for test configuration and monitoring
-- Support for multiple target URLs
-- Test scheduling (hourly, daily, weekly, monthly, or custom cron)
-- Detailed reporting and analytics
-- Customizable user input data
+- ✅ Automated form testing using Puppeteer in AWS Lambda
+- 📊 Real-time analytics dashboard
+- ⏰ Scheduled tests with configurable intervals
+- 🔍 Detailed test reports with screenshots
+- 🚨 Error tracking and notifications
+- 🔐 Secure and scalable architecture
 
-## Project Structure
+## Architecture
 
-- `/lambda` - AWS Lambda function for browser automation
-- `/frontend` - Next.js frontend application
+The system consists of two main components:
 
-## Getting Started
+1. **Frontend (Next.js)**
+   - Modern React-based dashboard
+   - Real-time analytics
+   - Test configuration interface
+   - Responsive design using Tailwind CSS
 
-### Prerequisites
+2. **Backend (AWS Lambda)**
+   - Serverless architecture
+   - Puppeteer for form testing
+   - DynamoDB for test results storage
+   - S3 for screenshot storage
+   - CloudWatch for monitoring
 
-- Node.js 18+
-- AWS CLI configured with appropriate credentials
-- Serverless Framework installed globally (`npm install -g serverless`)
+## Prerequisites
 
-### Deploying the Lambda Functions
+- Node.js 18 or later
+- AWS Account with appropriate permissions
+- Serverless Framework CLI
+- Git
 
-1. Navigate to the lambda directory:
+## Installation
 
-```bash
-cd lambda
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Deploy the AWS resources:
-
-```bash
-npm run deploy
-```
-
-4. Take note of the API Gateway endpoint URL from the deployment output. You will need to configure this in the frontend.
-
-### Setting up the Frontend
+### Frontend Setup
 
 1. Navigate to the frontend directory:
-
-```bash
-cd frontend
-```
+   ```bash
+   cd frontend
+   ```
 
 2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
-```
+3. Create a .env.local file:
+   ```env
+   NEXT_PUBLIC_API_URL=your_api_url
+   ```
 
-3. Create a `.env.local` file with the following content:
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-```
-NEXT_PUBLIC_API_URL=<Your API Gateway URL from the Lambda deployment>
-```
+### Backend Setup
 
-4. Start the development server:
+1. Navigate to the lambda directory:
+   ```bash
+   cd lambda
+   ```
 
-```bash
-npm run dev
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-5. For production, build and start the application:
+3. Deploy to AWS:
+   ```bash
+   npm run deploy
+   ```
 
-```bash
-npm run build
-npm start
-```
+## Configuration
+
+### Frontend Configuration
+
+The frontend can be configured through environment variables:
+
+- `NEXT_PUBLIC_API_URL`: API Gateway URL
+- `NEXT_PUBLIC_REGION`: AWS Region
+- `NEXT_PUBLIC_USER_POOL_ID`: Cognito User Pool ID (if using authentication)
+- `NEXT_PUBLIC_USER_POOL_CLIENT_ID`: Cognito Client ID (if using authentication)
+
+### Backend Configuration
+
+The backend is configured through the `serverless.yml` file:
+
+- `provider.region`: AWS Region
+- `provider.stage`: Deployment stage (dev, prod, etc.)
+- `provider.environment`: Environment variables for Lambda functions
+- `custom.resultsBucket`: S3 bucket for storing test results
 
 ## Usage
 
-### Creating a Form Test
+### Running Tests
 
-1. Open the frontend application
-2. Click on "Run Test" in the dashboard
-3. Enter the target URL and form configuration
-4. Click "Run Test" to execute the test immediately
+1. Navigate to the dashboard
+2. Click "Run Test" button
+3. Enter the form URL and configuration
+4. Submit and wait for results
 
 ### Scheduling Tests
 
-1. Navigate to the "New Schedule" section
-2. Configure the test details including URL, form fields, and schedule frequency
-3. Save the schedule to activate it
+1. Go to "Schedules" section
+2. Click "New Schedule"
+3. Configure test parameters and schedule
+4. Save the schedule
 
-### Viewing Test Results
+### Viewing Results
 
-1. From the dashboard, you can view recent test results
-2. Click on any test to see detailed information including:
-   - Screenshots (before, during, after)
-   - Form field values
-   - Success/failure status
-   - Error logs if any issues occurred
+1. Visit the dashboard for overview
+2. Click on individual tests for detailed reports
+3. View screenshots and error details
+4. Export results as needed
 
-## Advanced Configuration
+## Development
 
-### Customizing Form Selectors
+### Running Locally
 
-The system supports various field types and selector strategies:
+Frontend:
+```bash
+cd frontend
+npm run dev
+```
 
-- Text inputs
-- Select dropdowns
-- Checkboxes
-- Radio buttons
+Backend (local invoke):
+```bash
+cd lambda
+npm run invoke:local -- -f runTest -p test-event.json
+```
 
-Provide CSS selectors for each field in the form configuration.
+### Testing
 
-### Schedule Management
+Run frontend tests:
+```bash
+cd frontend
+npm test
+```
 
-- Tests can be scheduled to run hourly, daily, weekly, monthly, or with custom cron expressions
-- Schedules can be activated/deactivated at any time
-- View past runs for each schedule
+Run backend tests:
+```bash
+cd lambda
+npm test
+```
+
+### Deployment
+
+Deploy frontend to Vercel:
+```bash
+cd frontend
+vercel deploy
+```
+
+Deploy backend to AWS:
+```bash
+cd lambda
+npm run deploy:prod
+```
+
+## Security
+
+- All API endpoints are protected with CORS
+- Secure storage of test results
+- Request validation and sanitization
+- Rate limiting on API endpoints
+- AWS IAM roles with least privilege
+
+## Monitoring
+
+- CloudWatch metrics and logs
+- Error tracking and alerting
+- Performance monitoring
+- Cost monitoring and optimization
 
 ## Troubleshooting
 
-### Common Issues
+Common issues and solutions:
 
-- **Lambda Timeout**: If your form testing is complex, you may need to increase the Lambda timeout in `serverless.yml`
-- **Missing Screenshots**: Ensure the S3 bucket has proper permissions
-- **Scheduling Issues**: Verify EventBridge rules are correctly configured
+1. **Lambda Timeout**: Increase the timeout in serverless.yml
+2. **Memory Issues**: Increase Lambda memory allocation
+3. **API Errors**: Check CloudWatch logs for details
+4. **Deployment Failures**: Verify AWS credentials and permissions
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, please create an issue in the GitHub repository or contact the maintainers.
