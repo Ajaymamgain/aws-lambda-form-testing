@@ -9,7 +9,10 @@ import {
   Title, 
   Flex, 
   Grid, 
-  BarList
+  BarList,
+  LineChart,
+  DonutChart,
+  Legend
 } from "@tremor/react";
 import { 
   CheckCircleIcon, 
@@ -44,6 +47,23 @@ const mockAnalytics = {
     { id: "sched-001", name: "Daily Login Test", url: "https://example.com/login", nextRun: "2025-03-29T08:00:00Z" },
     { id: "sched-002", name: "Weekly Registration Form", url: "https://example.com/register", nextRun: "2025-04-01T09:00:00Z" },
     { id: "sched-003", name: "Monthly Newsletter Signup", url: "https://example.com/newsletter", nextRun: "2025-04-01T10:00:00Z" }
+  ],
+  // Mock chart data
+  testsOverTime: [
+    { date: "2025-03-22", successful: 42, failed: 8 },
+    { date: "2025-03-23", successful: 36, failed: 4 },
+    { date: "2025-03-24", successful: 29, failed: 7 },
+    { date: "2025-03-25", successful: 52, failed: 5 },
+    { date: "2025-03-26", successful: 38, failed: 6 },
+    { date: "2025-03-27", successful: 44, failed: 3 },
+    { date: "2025-03-28", successful: 35, failed: 2 }
+  ],
+  errorDistribution: [
+    { name: "Validation Errors", value: 43 },
+    { name: "Timeout", value: 19 },
+    { name: "Element Not Found", value: 12 },
+    { name: "Network Issues", value: 8 },
+    { name: "Other", value: 6 }
   ]
 };
 
@@ -62,7 +82,7 @@ export default function Dashboard() {
   }, [timeRange]);
 
   // Helper function to format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-GB', {
       day: '2-digit',
@@ -84,25 +104,25 @@ export default function Dashboard() {
           <div className="bg-gray-100 p-1 rounded-md flex">
             <button 
               onClick={() => setTimeRange("24h")}
-              className={`px-3 py-1 text-sm rounded-md ${timeRange === "24h" ? "bg-white shadow" : ""}`}
+              className={`time-filter-button ${timeRange === "24h" ? "active" : ""}`}
             >
               24h
             </button>
             <button 
               onClick={() => setTimeRange("7days")}
-              className={`px-3 py-1 text-sm rounded-md ${timeRange === "7days" ? "bg-white shadow" : ""}`}
+              className={`time-filter-button ${timeRange === "7days" ? "active" : ""}`}
             >
               7 days
             </button>
             <button 
               onClick={() => setTimeRange("30days")}
-              className={`px-3 py-1 text-sm rounded-md ${timeRange === "30days" ? "bg-white shadow" : ""}`}
+              className={`time-filter-button ${timeRange === "30days" ? "active" : ""}`}
             >
               30 days
             </button>
             <button 
               onClick={() => setTimeRange("all")}
-              className={`px-3 py-1 text-sm rounded-md ${timeRange === "all" ? "bg-white shadow" : ""}`}
+              className={`time-filter-button ${timeRange === "all" ? "active" : ""}`}
             >
               All time
             </button>
@@ -227,17 +247,51 @@ export default function Dashboard() {
         {/* Test results over time */}
         <Card>
           <Title>Test Results Over Time</Title>
-          <div className="h-72 mt-4 flex items-center justify-center">
-            <div className="text-neutral-500">Chart data loading...</div>
-          </div>
+          {isLoading ? (
+            <div className="h-72 mt-4 flex items-center justify-center">
+              <div className="text-neutral-500">Loading chart data...</div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4">
+                <LineChart
+                  className="h-72"
+                  data={mockAnalytics.testsOverTime}
+                  index="date"
+                  categories={["successful", "failed"]}
+                  colors={["emerald", "rose"]}
+                  yAxisWidth={40}
+                  showAnimation={true}
+                />
+              </div>
+              <Flex className="mt-4">
+                <Legend
+                  categories={["Successful", "Failed"]}
+                  colors={["emerald", "rose"]}
+                />
+              </Flex>
+            </>
+          )}
         </Card>
 
         {/* Error distribution */}
         <Card>
           <Title>Error Distribution</Title>
-          <div className="h-72 mt-4 flex items-center justify-center">
-            <div className="text-neutral-500">Chart data loading...</div>
-          </div>
+          {isLoading ? (
+            <div className="h-72 mt-4 flex items-center justify-center">
+              <div className="text-neutral-500">Loading chart data...</div>
+            </div>
+          ) : (
+            <DonutChart
+              className="h-72 mt-4"
+              data={mockAnalytics.errorDistribution}
+              category="value"
+              index="name"
+              valueFormatter={(value) => `${value} errors`}
+              colors={["rose", "amber", "blue", "indigo", "slate"]}
+              showAnimation={true}
+            />
+          )}
         </Card>
       </div>
 
