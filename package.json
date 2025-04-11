@@ -1,0 +1,21 @@
+{
+  "name": "aws-lambda-form-testing",
+  "version": "1.0.0",
+  "description": "Automated form testing with AWS Lambda",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "puppeteer": "^19.7.0",
+    "faker": "^5.5.3",
+    "aws-sdk": "^2.1040.0",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "jest": "^27.4.5",
+    "nodemon": "^2.0.15"
+  }
+}
