@@ -3,8 +3,9 @@ const defaultHeaders = {
   'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'http://localhost:3001',
   'Access-Control-Allow-Credentials': true,
   'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With,X-Amz-User-Agent',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent',
   'Access-Control-Max-Age': '86400',
+  'Cache-Control': 'no-store',
 };
 
 /**
@@ -25,7 +26,7 @@ exports.handleCors = () => {
   return {
     statusCode: 200,
     headers: defaultHeaders,
-    body: ''
+    body: '',
   };
 };
 
