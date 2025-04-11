@@ -71,7 +71,7 @@ export default function Header() {
             </button>
             
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                 <div className="py-1">
                   <div className="px-4 py-2 text-sm font-medium text-neutral-900 border-b border-neutral-100">
                     Notifications
@@ -104,7 +104,7 @@ export default function Header() {
           {/* Create new test button */}
           <Link
             href="/run-test"
-            className="hidden sm:inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            className="hidden sm:inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 btn btn-primary"
           >
             New Test
           </Link>
