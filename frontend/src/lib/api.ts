@@ -12,7 +12,7 @@ class ApiError extends Error {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-async function handleResponse(response: Response): Promise&lt;any&gt; {
+async function handleResponse(response: Response): Promise<any> {
   const contentType = response.headers.get('content-type');
   const isJson = contentType?.includes('application/json');
   const data = isJson ? await response.json() : await response.text();
@@ -25,7 +25,7 @@ async function handleResponse(response: Response): Promise&lt;any&gt; {
   return data;
 }
 
-export async function fetchAnalytics(timeRange: string): Promise&lt;any&gt; {
+export async function fetchAnalytics(timeRange: string): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/analytics?timeRange=${timeRange}`, {
     headers: {
       'Accept': 'application/json',
@@ -34,7 +34,7 @@ export async function fetchAnalytics(timeRange: string): Promise&lt;any&gt; {
   return handleResponse(response);
 }
 
-export async function runTest(url: string, config: any): Promise&lt;any&gt; {
+export async function runTest(url: string, config: any): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/tests`, {
     method: 'POST',
     headers: {
@@ -46,7 +46,7 @@ export async function runTest(url: string, config: any): Promise&lt;any&gt; {
   return handleResponse(response);
 }
 
-export async function createSchedule(schedule: any): Promise&lt;any&gt; {
+export async function createSchedule(schedule: any): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/schedules`, {
     method: 'POST',
     headers: {
@@ -58,7 +58,7 @@ export async function createSchedule(schedule: any): Promise&lt;any&gt; {
   return handleResponse(response);
 }
 
-export async function fetchTestResult(testId: string): Promise&lt;any&gt; {
+export async function fetchTestResult(testId: string): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/tests/${testId}`, {
     headers: {
       'Accept': 'application/json',
@@ -67,7 +67,7 @@ export async function fetchTestResult(testId: string): Promise&lt;any&gt; {
   return handleResponse(response);
 }
 
-export async function updateSchedule(scheduleId: string, updates: any): Promise&lt;any&gt; {
+export async function updateSchedule(scheduleId: string, updates: any): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}`, {
     method: 'PATCH',
     headers: {
@@ -79,7 +79,7 @@ export async function updateSchedule(scheduleId: string, updates: any): Promise&
   return handleResponse(response);
 }
 
-export async function deleteSchedule(scheduleId: string): Promise&lt;void&gt; {
+export async function deleteSchedule(scheduleId: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}`, {
     method: 'DELETE',
   });
@@ -87,11 +87,11 @@ export async function deleteSchedule(scheduleId: string): Promise&lt;void&gt; {
 }
 
 // Add retry logic for API calls
-export async function withRetry&lt;T&gt;(
-  fn: () => Promise&lt;T&gt;,
+export async function withRetry<T>(
+  fn: () => Promise<T>,
   retries = 3,
   delay = 1000
-): Promise&lt;T&gt; {
+): Promise<T> {
   try {
     return await fn();
   } catch (error) {
