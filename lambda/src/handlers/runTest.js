@@ -2,20 +2,13 @@ const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
+const { createResponse, handleError, handleCors } = require('../utils/response');
 
 const s3 = new AWS.S3();
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
 const RESULTS_BUCKET = process.env.RESULTS_BUCKET;
 const TESTS_TABLE = process.env.TESTS_TABLE;
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'];
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',  // In production, you should specify your domain
-  'Access-Control-Allow-Credentials': true,
-  'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Requested-With',
-};
 
 async function initBrowser() {
   let browser;
@@ -47,22 +40,18 @@ async function validateForm(page, config) {
 
     // Check form accessibility
     const accessibilityReport = await page.evaluate(() => {
-      // Basic accessibility checks
       const form = document.querySelector('form');
       const results = [];
 
       if (!form) return results;
 
-      // Check form elements
       const inputs = form.querySelectorAll('input, select, textarea');
       inputs.forEach(input => {
-        // Check for labels
         const label = input.labels?.[0]?.textContent || input.getAttribute('aria-label');
         if (!label) {
           results.push({ type: 'error', message: `Input ${input.name || input.id} missing label` });
         }
 
-        // Check for ARIA attributes
         if (input.getAttribute('aria-required') === 'true' && !input.hasAttribute('required')) {
           results.push({ type: 'warning', message: `Input ${input.name || input.id} marked as aria-required but missing required attribute` });
         }
@@ -104,7 +93,6 @@ async function validateForm(page, config) {
           const element = document.querySelector(selector);
           if (!element) return null;
           
-          // Check HTML5 validation
           const validity = element.validity;
           if (!validity.valid) {
             return {
@@ -130,16 +118,13 @@ async function validateForm(page, config) {
     // Submit form if specified
     if (config.submit) {
       try {
-        // Click submit button
         await page.click(config.submitSelector || 'button[type="submit"]');
         
-        // Wait for navigation or response
         await Promise.race([
           page.waitForNavigation({ timeout: 5000 }),
           page.waitForSelector(config.successSelector || '.success-message', { timeout: 5000 }),
         ]);
 
-        // Check for error messages
         const errors = await page.evaluate((errorSelector) => {
           const elements = document.querySelectorAll(errorSelector || '.error-message');
           return Array.from(elements).map(el => el.textContent);
@@ -168,28 +153,29 @@ async function validateForm(page, config) {
 exports.handler = async (event) => {
   // Handle preflight requests
   if (event.requestContext?.http?.method === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: '',
-    };
+    return handleCors();
   }
 
   let browser;
   try {
-    const testId = uuidv4();
+    if (!event.body) {
+      return createResponse(400, {
+        error: 'Missing request body',
+        message: 'Request body is required',
+      });
+    }
+
     const { url, config } = JSON.parse(event.body);
 
-    // Validate input
     if (!url) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: 'URL is required',
-        }),
-      };
+      return createResponse(400, {
+        error: 'Missing URL',
+        message: 'URL is required',
+      });
     }
+
+    const testId = uuidv4();
+    const startTime = Date.now();
 
     // Initialize browser
     browser = await initBrowser();
@@ -198,8 +184,6 @@ exports.handler = async (event) => {
     // Set viewport and user agent
     await page.setViewport({ width: 1280, height: 800 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-
-    const startTime = Date.now();
 
     // Navigate to page
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
@@ -211,7 +195,7 @@ exports.handler = async (event) => {
     const testResults = await validateForm(page, config);
 
     const endTime = Date.now();
-    const duration = (endTime - startTime) / 1000; // Duration in seconds
+    const duration = (endTime - startTime) / 1000;
 
     // Save screenshot to S3
     await s3.putObject({
@@ -238,26 +222,15 @@ exports.handler = async (event) => {
       },
     }).promise();
 
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        testId,
-        results: testResults,
-        screenshotUrl: `${RESULTS_BUCKET}/${testId}/screenshot.png`,
-        duration,
-      }),
-    };
+    return createResponse(200, {
+      testId,
+      results: testResults,
+      screenshotUrl: `${RESULTS_BUCKET}/${testId}/screenshot.png`,
+      duration,
+    });
   } catch (error) {
     console.error('Test execution failed:', error);
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        error: 'Test execution failed',
-        message: error.message,
-      }),
-    };
+    return handleError(error);
   } finally {
     if (browser) {
       await browser.close();
